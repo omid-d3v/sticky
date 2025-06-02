@@ -1,105 +1,91 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fa" dir="rtl">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Digital Sticky Notes Board</title>
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-  <!-- GSAP CDN -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js" integrity="sha512-k3UkHF47YI6eEgDANu/ZKmM/A2399gSZl+8cfxQzPWfeYzuzKoHX8y5YWfcoVj31VojL5+raBpifq0p8/njyGA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <title>تخته یادداشت‌های تبریک تولد</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollToPlugin.min.js"></script>
   <style>
+    /* Additional styles specific to index.html if needed */
     body {
-      font-family: Arial, sans-serif;
-      background: #f0f0f0;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      background-image: url('https://www.transparenttextures.com/patterns/light-paper-fibers.png'), linear-gradient(to bottom right, #ffecd2, #fcb69f);
+      background-attachment: fixed;
+      /* Ensure smooth scrolling behavior is allowed if not default */
+      scroll-behavior: smooth;
     }
-    header {
-      background: #333;
-      color: #fff;
-      width: 100%;
-      padding: 1rem;
+    .app-title {
+      font-size: 2.5rem;
+      color: #d81b60; /* Deep pink */
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+      padding: 10px 20px;
+      background-color: rgba(255, 255, 255, 0.8);
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    .add-note-link-container {
+      margin-bottom: 30px;
       text-align: center;
     }
-    #note-form {
-      background: #fff;
-      padding: 1rem;
-      margin: 1rem 0;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      width: 90%;
-      max-width: 400px;
-    }
-    #note-form input,
-    #note-form textarea {
-      width: 100%;
-      padding: 0.5rem;
-      margin: 0.5rem 0;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      font-size: 1rem;
-    }
-    #note-form button {
-      background: #28a745;
-      color: #fff;
-      border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 1rem;
-    }
-    #notes-container {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      width: 100%;
-      max-width: 1000px;
-    }
-    .note {
-      background: #fff;
-      width: 200px;
-      min-height: 150px;
-      margin: 1rem;
-      padding: 1rem;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      position: relative;
-      overflow: hidden;
-    }
-    .note img {
-      max-width: 100%;
-      border-radius: 4px;
-      margin-bottom: 0.5rem;
-    }
-    .note .name {
+    .add-note-link {
+      display: inline-block;
+      padding: 12px 25px;
+      background-color: #ff8a65; /* Light coral */
+      color: white;
+      text-decoration: none;
+      border-radius: 25px;
+      font-size: 1.1rem;
       font-weight: bold;
-      margin-bottom: 0.5rem;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+      transition: transform 0.2s ease-out, background-color 0.2s ease;
+    }
+    .add-note-link:hover {
+      background-color: #ff7043; /* Darker coral */
+      transform: translateY(-2px);
+    }
+    #user-id-display {
+      position: fixed;
+      bottom: 10px;
+      left: 10px;
+      background-color: rgba(0,0,0,0.5);
+      color: white;
+      padding: 5px 10px;
+      border-radius: 5px;
+      font-size: 0.8rem;
+      z-index: 1000;
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>Digital Sticky Notes Board</h1>
+    <h1 class="app-title">🎉 تخته یادداشت‌های تبریک تولد! 🎂</h1>
   </header>
 
-  <form id="note-form">
-    <input type="text" id="name" placeholder="Your Name" required />
-    <textarea id="message" placeholder="Your Message" rows="3" required></textarea>
-    <input type="text" id="imageURL" placeholder="Image URL (optional)" />
-    <button type="submit">Add Sticky Note</button>
-  </form>
+  <div class="add-note-link-container">
+    <a href="add.html" class="add-note-link">افزودن پیام تبریک +</a>
+  </div>
 
-  <div id="notes-container"></div>
+  <div id="notes-container">
+    </div>
 
-  <script>
-    // TODO: جایگزین کن با تنظیمات پروژه‌ی خودت از Firebase Console
-    const firebaseConfig = {
-        apiKey: "AIzaSyBux-_Rlnw0nIv-F1dSdcRAbvLPSSTpZ8I",
+  <div id="user-id-display">شناسه کاربر در حال بارگذاری...</div>
+
+  <script type="module">
+    // Import Firebase modules
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getFirestore, collection, query, orderBy, onSnapshot, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+    // Register GSAP ScrollToPlugin
+    gsap.registerPlugin(ScrollToPlugin);
+
+    // Firebase configuration - uses global variable if available
+    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+      // Fallback config - REPLACE WITH YOURS if __firebase_config is not available
+      apiKey: "AIzaSyBux-_Rlnw0nIv-F1dSdcRAbvLPSSTpZ8I",
   authDomain: "sticky-e06b0.firebaseapp.com",
   projectId: "sticky-e06b0",
   storageBucket: "sticky-e06b0.firebasestorage.app",
@@ -107,73 +93,211 @@
   appId: "1:632807722451:web:be9d003c442eb14987f326"
     };
 
+    // App ID - uses global variable if available
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-birthday-board';
+
     // Initialize Firebase
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
 
-    const noteForm = document.getElementById('note-form');
     const notesContainer = document.getElementById('notes-container');
+    const userIdDisplay = document.getElementById('user-id-display');
+    let currentUserId = null;
 
-    noteForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const name = document.getElementById('name').value.trim();
-      const message = document.getElementById('message').value.trim();
-      const imageURL = document.getElementById('imageURL').value.trim();
+    // --- Auto-scroll variables ---
+    let autoScrollAnimation;
+    const SCROLL_SPEED_FACTOR = 0.02; // Lower is slower. Adjust for "خیلی ریز" feel. e.g. 0.02 means 50 seconds to scroll 1000px
+    let resumeScrollTimeout;
+    const MIN_NOTES_FOR_AUTOSCROLL = 6; // Minimum notes to trigger auto-scroll
+    const USER_INTERACTION_PAUSE_DURATION = 7000; // 7 seconds
+    const DELAY_AT_ENDS_OF_SCROLL = 3000; // 3 seconds delay at top/bottom before reversing
 
-      if (name && message) {
-        // Add note to Firestore
-        await db.collection('stickyNotes').add({
-          name,
-          message,
-          imageURL: imageURL || null,
-          timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        });
-
-        // Clear form
-        noteForm.reset();
+    // Authenticate user
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        console.log("User is signed in:", user.uid);
+        currentUserId = user.uid;
+        userIdDisplay.textContent = `شناسه شما: ${currentUserId} (App ID: ${appId})`;
+        loadNotes(); // Load notes once authenticated
+      } else {
+        console.log("User is signed out. Attempting to sign in...");
+        userIdDisplay.textContent = "در حال احراز هویت...";
+        try {
+          if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+            console.log("Attempting sign in with custom token.");
+            await signInWithCustomToken(auth, __initial_auth_token);
+          } else {
+            console.log("Attempting sign in anonymously.");
+            await signInAnonymously(auth);
+          }
+        } catch (error) {
+          console.error("Error during sign in:", error);
+          userIdDisplay.textContent = "خطا در احراز هویت.";
+        }
       }
     });
 
-    // Listen for new notes
-    db.collection('stickyNotes').orderBy('timestamp', 'desc').onSnapshot((snapshot) => {
-      notesContainer.innerHTML = '';
-      snapshot.forEach((doc, index) => {
-        const data = doc.data();
-        createNoteElement(data, index);
-      });
-    });
+    // Function to load and display notes
+    function loadNotes() {
+      if (!currentUserId) {
+        console.log("Authentication not complete yet. Notes will load after auth.");
+        return;
+      }
+      const notesCollectionPath = `artifacts/${appId}/public/data/stickyNotes`;
+      const q = query(collection(db, notesCollectionPath), orderBy('timestamp', 'desc'));
 
-    function createNoteElement(data, index) {
+      onSnapshot(q, (snapshot) => {
+        const notesExist = notesContainer.children.length > 0;
+        const animateOutCallback = () => {
+            notesContainer.innerHTML = ''; // Clear after animation
+            displayNotes(snapshot.docs);
+        };
+
+        if (notesExist) {
+            gsap.to(".note", {
+                opacity: 0, scale: 0.8, duration: 0.3, stagger: 0.05,
+                onComplete: animateOutCallback
+            });
+        } else {
+            notesContainer.innerHTML = ''; // Clear immediately if no notes shown
+            displayNotes(snapshot.docs);
+        }
+      }, (error) => {
+        console.error("Error fetching notes: ", error);
+        notesContainer.innerHTML = '<p style="color: red; text-align: center;">خطا در بارگذاری یادداشت‌ها. لطفاً صفحه را رفرش کنید.</p>';
+      });
+    }
+
+    function displayNotes(docs) {
+        docs.forEach((doc, index) => {
+            const data = doc.data();
+            createNoteElement(data, doc.id, index);
+        });
+        if (docs.length === 0) {
+            notesContainer.innerHTML = '<p style="text-align: center; color: #555; font-size: 1.2rem;">هنوز هیچ پیام تبریکی ثبت نشده. اولین نفر باش!</p>';
+            if (autoScrollAnimation) autoScrollAnimation.kill(); // Stop scroll if no notes
+        } else {
+            // Initialize or update auto-scroll based on note count
+            // Timeout to allow DOM to update and heights to be calculated
+            setTimeout(() => {
+                if (docs.length >= MIN_NOTES_FOR_AUTOSCROLL) {
+                    initiateAutoScroll();
+                } else {
+                    if (autoScrollAnimation) autoScrollAnimation.kill(); // Stop if not enough notes
+                }
+            }, 500); // Delay to ensure layout is stable
+        }
+    }
+
+    function createNoteElement(data, id, index) {
       const noteEl = document.createElement('div');
       noteEl.classList.add('note');
+      noteEl.dataset.id = id;
+      const randomRotation = (Math.random() - 0.5) * 8;
+      noteEl.style.transform = `rotate(${randomRotation}deg)`;
 
-      if (data.imageURL) {
-        const imgEl = document.createElement('img');
-        imgEl.src = data.imageURL;
-        noteEl.appendChild(imgEl);
-      }
+      const avatarContainer = document.createElement('div');
+      avatarContainer.classList.add('avatar-container');
+      const avatarImg = document.createElement('img');
+      avatarImg.src = data.imageURL || `https://placehold.co/60x60/FFC107/FFFFFF?text=${data.name.substring(0,1).toUpperCase()}&font=Vazirmatn`;
+      avatarImg.alt = `آواتار ${data.name}`;
+      avatarImg.onerror = function() {
+          this.src = `https://placehold.co/60x60/4CAF50/FFFFFF?text=${data.name.substring(0,1).toUpperCase()}&font=Vazirmatn`;
+          this.alt = `آواتار پیش‌فرض برای ${data.name}`;
+      };
+      avatarContainer.appendChild(avatarImg);
+      noteEl.appendChild(avatarContainer);
 
       const nameEl = document.createElement('div');
       nameEl.classList.add('name');
       nameEl.textContent = data.name;
       noteEl.appendChild(nameEl);
 
-      const msgEl = document.createElement('div');
+      const msgEl = document.createElement('p');
       msgEl.classList.add('message');
       msgEl.textContent = data.message;
       noteEl.appendChild(msgEl);
 
+      if (data.timestamp && data.timestamp.toDate) {
+        const dateEl = document.createElement('div');
+        dateEl.classList.add('timestamp');
+        dateEl.textContent = data.timestamp.toDate().toLocaleDateString('fa-IR', { day: 'numeric', month: 'long' });
+        noteEl.appendChild(dateEl);
+      }
+      
+      const pinEl = document.createElement('div');
+      pinEl.classList.add('pin');
+      noteEl.appendChild(pinEl);
+
       notesContainer.appendChild(noteEl);
 
-      // Animate with GSAP: slide-in from bottom with stagger
-      gsap.from(noteEl, {
-        duration: 0.6,
-        y: 50,
-        opacity: 0,
-        ease: 'power2.out',
-        delay: index * 0.1
-      });
+      gsap.fromTo(noteEl,
+        { opacity: 0, scale: 0.3, y: 60, rotation: randomRotation - 20 },
+        {
+          duration: 0.8, opacity: 1, scale: 1, y: 0, rotation: randomRotation,
+          ease: 'elastic.out(1, 0.7)', delay: index * 0.15
+        }
+      );
     }
+
+    // --- Auto-scroll functions ---
+    function initiateAutoScroll() {
+        if (autoScrollAnimation) autoScrollAnimation.kill(); // Clear any existing animation
+
+        const scrollableHeight = document.documentElement.scrollHeight - window.innerHeight;
+        if (scrollableHeight <= 0) {
+            console.log("No scroll needed or content not overflowing.");
+            return; // No need to scroll if content doesn't overflow
+        }
+        
+        console.log("Initiating auto scroll. Scrollable height:", scrollableHeight);
+
+        // Determine current scroll position to decide initial direction
+        const currentScrollY = window.scrollY;
+        const isAtBottom = currentScrollY >= scrollableHeight - 1; // -1 for precision
+        const isAtTop = currentScrollY <= 1; // 1 for precision
+
+        let targetY = isAtBottom ? 0 : "max"; // If at bottom, scroll to top, else scroll to max (bottom)
+        let duration = Math.abs((targetY === "max" ? scrollableHeight : 0) - currentScrollY) * SCROLL_SPEED_FACTOR;
+        
+        if (duration < 5) duration = 5; // Minimum duration to avoid too fast scroll for small distances
+
+        console.log(`Scrolling to: ${targetY}, CurrentY: ${currentScrollY}, Duration: ${duration}`);
+
+        autoScrollAnimation = gsap.to(window, {
+            scrollTo: { y: targetY, autoKill: false },
+            duration: duration,
+            ease: "power1.inOut", // Smoother than 'none' for start/end
+            onComplete: () => {
+                // After completing scroll to one end, wait, then scroll to the other
+                setTimeout(initiateAutoScroll, DELAY_AT_ENDS_OF_SCROLL);
+            }
+        });
+    }
+
+    function handleUserInteraction() {
+        if (autoScrollAnimation && autoScrollAnimation.isActive()) {
+            console.log("User interaction, pausing scroll.");
+            autoScrollAnimation.pause();
+        }
+        clearTimeout(resumeScrollTimeout);
+        resumeScrollTimeout = setTimeout(() => {
+            if (autoScrollAnimation && !autoScrollAnimation.isActive()) {
+                 // Only resume if it was paused and not killed
+                console.log("Resuming scroll after user inactivity.");
+                // Instead of just resume, re-initiate to calculate new target and duration smoothly
+                initiateAutoScroll();
+            }
+        }, USER_INTERACTION_PAUSE_DURATION);
+    }
+
+    // Add event listeners for user interaction to pause auto-scroll
+    window.addEventListener('scroll', handleUserInteraction, { passive: true });
+    window.addEventListener('wheel', handleUserInteraction, { passive: true });
+    window.addEventListener('touchstart', handleUserInteraction, { passive: true });
+    window.addEventListener('mousedown', handleUserInteraction); // Catches scrollbar drag start
+
   </script>
 </body>
 </html>
