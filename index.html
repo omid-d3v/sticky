@@ -9,16 +9,14 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollToPlugin.min.js"></script>
   <style>
-    /* Additional styles specific to index.html if needed */
     body {
       background-image: url('https://www.transparenttextures.com/patterns/light-paper-fibers.png'), linear-gradient(to bottom right, #ffecd2, #fcb69f);
       background-attachment: fixed;
-      /* Ensure smooth scrolling behavior is allowed if not default */
       scroll-behavior: smooth;
     }
     .app-title {
       font-size: 2.5rem;
-      color: #d81b60; /* Deep pink */
+      color: #d81b60;
       text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
       margin-bottom: 20px;
       padding: 10px 20px;
@@ -26,37 +24,7 @@
       border-radius: 12px;
       box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     }
-    .add-note-link-container {
-      margin-bottom: 30px;
-      text-align: center;
-    }
-    .add-note-link {
-      display: inline-block;
-      padding: 12px 25px;
-      background-color: #ff8a65; /* Light coral */
-      color: white;
-      text-decoration: none;
-      border-radius: 25px;
-      font-size: 1.1rem;
-      font-weight: bold;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-      transition: transform 0.2s ease-out, background-color 0.2s ease;
-    }
-    .add-note-link:hover {
-      background-color: #ff7043; /* Darker coral */
-      transform: translateY(-2px);
-    }
-    #user-id-display {
-      position: fixed;
-      bottom: 10px;
-      left: 10px;
-      background-color: rgba(0,0,0,0.5);
-      color: white;
-      padding: 5px 10px;
-      border-radius: 5px;
-      font-size: 0.8rem;
-      z-index: 1000;
-    }
+    /* No add note link container needed */
   </style>
 </head>
 <body>
@@ -64,28 +32,20 @@
     <h1 class="app-title">🎉 تخته یادداشت‌های تبریک تولد! 🎂</h1>
   </header>
 
-  <div class="add-note-link-container">
-    <a href="add.html" class="add-note-link">افزودن پیام تبریک +</a>
-  </div>
-
   <div id="notes-container">
     </div>
-
-  <div id="user-id-display">شناسه کاربر در حال بارگذاری...</div>
 
   <script type="module">
     // Import Firebase modules
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getFirestore, collection, query, orderBy, onSnapshot, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     // Register GSAP ScrollToPlugin
     gsap.registerPlugin(ScrollToPlugin);
 
     // Firebase configuration - uses global variable if available
     const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-      // Fallback config - REPLACE WITH YOURS if __firebase_config is not available
-      apiKey: "AIzaSyBux-_Rlnw0nIv-F1dSdcRAbvLPSSTpZ8I",
+        apiKey: "AIzaSyBux-_Rlnw0nIv-F1dSdcRAbvLPSSTpZ8I",
   authDomain: "sticky-e06b0.firebaseapp.com",
   projectId: "sticky-e06b0",
   storageBucket: "sticky-e06b0.firebasestorage.app",
@@ -99,51 +59,19 @@
     // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-    const auth = getAuth(app);
 
     const notesContainer = document.getElementById('notes-container');
-    const userIdDisplay = document.getElementById('user-id-display');
-    let currentUserId = null;
 
     // --- Auto-scroll variables ---
     let autoScrollAnimation;
-    const SCROLL_SPEED_FACTOR = 0.02; // Lower is slower. Adjust for "خیلی ریز" feel. e.g. 0.02 means 50 seconds to scroll 1000px
+    const SCROLL_SPEED_FACTOR = 0.02;
     let resumeScrollTimeout;
-    const MIN_NOTES_FOR_AUTOSCROLL = 6; // Minimum notes to trigger auto-scroll
-    const USER_INTERACTION_PAUSE_DURATION = 7000; // 7 seconds
-    const DELAY_AT_ENDS_OF_SCROLL = 3000; // 3 seconds delay at top/bottom before reversing
-
-    // Authenticate user
-    onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        console.log("User is signed in:", user.uid);
-        currentUserId = user.uid;
-        userIdDisplay.textContent = `شناسه شما: ${currentUserId} (App ID: ${appId})`;
-        loadNotes(); // Load notes once authenticated
-      } else {
-        console.log("User is signed out. Attempting to sign in...");
-        userIdDisplay.textContent = "در حال احراز هویت...";
-        try {
-          if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-            console.log("Attempting sign in with custom token.");
-            await signInWithCustomToken(auth, __initial_auth_token);
-          } else {
-            console.log("Attempting sign in anonymously.");
-            await signInAnonymously(auth);
-          }
-        } catch (error) {
-          console.error("Error during sign in:", error);
-          userIdDisplay.textContent = "خطا در احراز هویت.";
-        }
-      }
-    });
+    const MIN_NOTES_FOR_AUTOSCROLL = 6;
+    const USER_INTERACTION_PAUSE_DURATION = 7000;
+    const DELAY_AT_ENDS_OF_SCROLL = 3000;
 
     // Function to load and display notes
     function loadNotes() {
-      if (!currentUserId) {
-        console.log("Authentication not complete yet. Notes will load after auth.");
-        return;
-      }
       const notesCollectionPath = `artifacts/${appId}/public/data/stickyNotes`;
       const q = query(collection(db, notesCollectionPath), orderBy('timestamp', 'desc'));
 
@@ -176,17 +104,15 @@
         });
         if (docs.length === 0) {
             notesContainer.innerHTML = '<p style="text-align: center; color: #555; font-size: 1.2rem;">هنوز هیچ پیام تبریکی ثبت نشده. اولین نفر باش!</p>';
-            if (autoScrollAnimation) autoScrollAnimation.kill(); // Stop scroll if no notes
+            if (autoScrollAnimation) autoScrollAnimation.kill();
         } else {
-            // Initialize or update auto-scroll based on note count
-            // Timeout to allow DOM to update and heights to be calculated
             setTimeout(() => {
                 if (docs.length >= MIN_NOTES_FOR_AUTOSCROLL) {
                     initiateAutoScroll();
                 } else {
-                    if (autoScrollAnimation) autoScrollAnimation.kill(); // Stop if not enough notes
+                    if (autoScrollAnimation) autoScrollAnimation.kill();
                 }
-            }, 500); // Delay to ensure layout is stable
+            }, 500);
         }
     }
 
@@ -241,36 +167,26 @@
       );
     }
 
-    // --- Auto-scroll functions ---
     function initiateAutoScroll() {
-        if (autoScrollAnimation) autoScrollAnimation.kill(); // Clear any existing animation
+        if (autoScrollAnimation) autoScrollAnimation.kill(); 
 
         const scrollableHeight = document.documentElement.scrollHeight - window.innerHeight;
-        if (scrollableHeight <= 0) {
-            console.log("No scroll needed or content not overflowing.");
-            return; // No need to scroll if content doesn't overflow
-        }
+        if (scrollableHeight <= 0) return;
         
-        console.log("Initiating auto scroll. Scrollable height:", scrollableHeight);
-
-        // Determine current scroll position to decide initial direction
         const currentScrollY = window.scrollY;
-        const isAtBottom = currentScrollY >= scrollableHeight - 1; // -1 for precision
-        const isAtTop = currentScrollY <= 1; // 1 for precision
+        const isAtBottom = currentScrollY >= scrollableHeight - 1;
+        const isAtTop = currentScrollY <= 1; 
 
-        let targetY = isAtBottom ? 0 : "max"; // If at bottom, scroll to top, else scroll to max (bottom)
+        let targetY = isAtBottom ? 0 : "max"; 
         let duration = Math.abs((targetY === "max" ? scrollableHeight : 0) - currentScrollY) * SCROLL_SPEED_FACTOR;
         
-        if (duration < 5) duration = 5; // Minimum duration to avoid too fast scroll for small distances
-
-        console.log(`Scrolling to: ${targetY}, CurrentY: ${currentScrollY}, Duration: ${duration}`);
+        if (duration < 5) duration = 5;
 
         autoScrollAnimation = gsap.to(window, {
             scrollTo: { y: targetY, autoKill: false },
             duration: duration,
-            ease: "power1.inOut", // Smoother than 'none' for start/end
+            ease: "power1.inOut", 
             onComplete: () => {
-                // After completing scroll to one end, wait, then scroll to the other
                 setTimeout(initiateAutoScroll, DELAY_AT_ENDS_OF_SCROLL);
             }
         });
@@ -278,25 +194,23 @@
 
     function handleUserInteraction() {
         if (autoScrollAnimation && autoScrollAnimation.isActive()) {
-            console.log("User interaction, pausing scroll.");
             autoScrollAnimation.pause();
         }
         clearTimeout(resumeScrollTimeout);
         resumeScrollTimeout = setTimeout(() => {
             if (autoScrollAnimation && !autoScrollAnimation.isActive()) {
-                 // Only resume if it was paused and not killed
-                console.log("Resuming scroll after user inactivity.");
-                // Instead of just resume, re-initiate to calculate new target and duration smoothly
                 initiateAutoScroll();
             }
         }, USER_INTERACTION_PAUSE_DURATION);
     }
 
-    // Add event listeners for user interaction to pause auto-scroll
+    // Load notes when the DOM is ready
+    document.addEventListener('DOMContentLoaded', loadNotes);
+
     window.addEventListener('scroll', handleUserInteraction, { passive: true });
     window.addEventListener('wheel', handleUserInteraction, { passive: true });
     window.addEventListener('touchstart', handleUserInteraction, { passive: true });
-    window.addEventListener('mousedown', handleUserInteraction); // Catches scrollbar drag start
+    window.addEventListener('mousedown', handleUserInteraction);
 
   </script>
 </body>

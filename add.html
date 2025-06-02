@@ -7,7 +7,6 @@
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css">
   <style>
-    /* Additional styles specific to add.html if needed */
     body {
       display: flex;
       flex-direction: column;
@@ -27,7 +26,7 @@
     }
     .form-title {
       text-align: center;
-      color: #3f51b5; /* Indigo */
+      color: #3f51b5;
       margin-bottom: 25px;
       font-size: 1.8rem;
     }
@@ -38,7 +37,7 @@
     .view-notes-link {
       display: inline-block;
       padding: 10px 20px;
-      background-color: #66bb6a; /* Light Green */
+      background-color: #66bb6a;
       color: white;
       text-decoration: none;
       border-radius: 20px;
@@ -47,7 +46,7 @@
       transition: background-color 0.2s ease;
     }
     .view-notes-link:hover {
-      background-color: #4caf50; /* Darker Green */
+      background-color: #4caf50;
     }
      #message-box {
         margin-top: 15px;
@@ -55,28 +54,17 @@
         border-radius: 5px;
         text-align: center;
         font-weight: bold;
-        display: none; /* Hidden by default */
+        display: none; 
     }
     #message-box.success {
-        background-color: #d4edda; /* Light green */
-        color: #155724; /* Dark green */
+        background-color: #d4edda;
+        color: #155724;
         border: 1px solid #c3e6cb;
     }
     #message-box.error {
-        background-color: #f8d7da; /* Light red */
-        color: #721c24; /* Dark red */
+        background-color: #f8d7da;
+        color: #721c24;
         border: 1px solid #f5c6cb;
-    }
-    #user-id-display-form {
-      position: fixed;
-      bottom: 10px;
-      left: 10px;
-      background-color: rgba(0,0,0,0.5);
-      color: white;
-      padding: 5px 10px;
-      border-radius: 5px;
-      font-size: 0.8rem;
-      z-index: 1000;
     }
   </style>
 </head>
@@ -99,23 +87,19 @@
       </div>
       <button type="submit" id="submit-button">ارسال پیام ✨</button>
     </form>
-    <div id="message-box"></div> </div>
+    <div id="message-box"></div>
+  </div>
 
   <div class="view-notes-link-container">
-    <a href="index.html" class="view-notes-link">مشاهده همه پیام‌ها  बोर्ड</a>
+    <a href="index.html" class="view-notes-link">مشاهده همه پیام‌ها</a>
   </div>
-  <div id="user-id-display-form">شناسه کاربر در حال بارگذاری...</div>
 
   <script type="module">
-    // Import Firebase modules
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-    // Firebase configuration - uses global variable if available
-     const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-      // Fallback config - REPLACE WITH YOURS if __firebase_config is not available
-      apiKey: "AIzaSyBux-_Rlnw0nIv-F1dSdcRAbvLPSSTpZ8I",
+    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+        apiKey: "AIzaSyBux-_Rlnw0nIv-F1dSdcRAbvLPSSTpZ8I",
   authDomain: "sticky-e06b0.firebaseapp.com",
   projectId: "sticky-e06b0",
   storageBucket: "sticky-e06b0.firebasestorage.app",
@@ -123,65 +107,27 @@
   appId: "1:632807722451:web:be9d003c442eb14987f326"
     };
 
-    // App ID - uses global variable if available
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-birthday-board'; // Should match index.html
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-birthday-board';
 
-    // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-    const auth = getAuth(app);
 
     const noteForm = document.getElementById('note-form');
     const submitButton = document.getElementById('submit-button');
     const messageBox = document.getElementById('message-box');
-    const userIdDisplayForm = document.getElementById('user-id-display-form');
-    let currentUserId = null;
-
-    // Authenticate user
-    onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        console.log("User is signed in (add.html):", user.uid);
-        currentUserId = user.uid;
-        userIdDisplayForm.textContent = `شناسه شما: ${currentUserId} (App ID: ${appId})`;
-        noteForm.style.opacity = 1; // Show form once authenticated
-        submitButton.disabled = false;
-      } else {
-        console.log("User is signed out (add.html). Attempting to sign in...");
-        userIdDisplayForm.textContent = "در حال احراز هویت...";
-        noteForm.style.opacity = 0.5; // Dim form while authenticating
-        submitButton.disabled = true;
-        try {
-          if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-            console.log("Attempting sign in with custom token (add.html).");
-            await signInWithCustomToken(auth, __initial_auth_token);
-          } else {
-            console.log("Attempting sign in anonymously (add.html).");
-            await signInAnonymously(auth);
-          }
-        } catch (error) {
-          console.error("Error during sign in (add.html):", error);
-          userIdDisplayForm.textContent = "خطا در احراز هویت.";
-          showMessage("خطا در اتصال به سرور. لطفا بعدا تلاش کنید.", "error");
-        }
-      }
-    });
     
     function showMessage(message, type = "success") {
         messageBox.textContent = message;
-        messageBox.className = type; // 'success' or 'error'
+        messageBox.className = type; 
         messageBox.style.display = 'block';
         setTimeout(() => {
             messageBox.style.display = 'none';
-        }, 4000); // Hide after 4 seconds
+        }, 4000);
     }
 
     noteForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      if (!currentUserId) {
-        showMessage("هنوز احراز هویت انجام نشده. لطفا کمی صبر کنید.", "error");
-        return;
-      }
-
+      
       const name = document.getElementById('name').value.trim();
       const message = document.getElementById('message').value.trim();
       const imageURL = document.getElementById('imageURL').value.trim();
@@ -190,14 +136,13 @@
         submitButton.disabled = true;
         submitButton.textContent = 'در حال ارسال...';
         try {
-          // Path for public notes for this specific app instance
           const notesCollectionPath = `artifacts/${appId}/public/data/stickyNotes`;
           await addDoc(collection(db, notesCollectionPath), {
             name,
             message,
-            imageURL: imageURL || null, // Store null if empty
-            timestamp: serverTimestamp(), // Firestore server timestamp
-            userId: currentUserId // Store the UID of the user who added the note
+            imageURL: imageURL || null,
+            timestamp: serverTimestamp()
+            // No userId field needed anymore
           });
 
           showMessage('پیام شما با موفقیت ارسال شد! 🎉', 'success');
