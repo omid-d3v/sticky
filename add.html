@@ -98,16 +98,14 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-        apiKey: "AIzaSyBux-_Rlnw0nIv-F1dSdcRAbvLPSSTpZ8I",
-  authDomain: "sticky-e06b0.firebaseapp.com",
-  projectId: "sticky-e06b0",
-  storageBucket: "sticky-e06b0.firebasestorage.app",
-  messagingSenderId: "632807722451",
-  appId: "1:632807722451:web:be9d003c442eb14987f326"
+    const firebaseConfig = {
+      apiKey: "AIzaSyBux-_Rlnw0nIv-F1dSdcRAbvLPSSTpZ8I",
+      authDomain: "sticky-e06b0.firebaseapp.com",
+      projectId: "sticky-e06b0",
+      storageBucket: "sticky-e06b0.appspot.com",
+      messagingSenderId: "632807722451",
+      appId: "1:632807722451:web:be9d003c442eb14987f326"
     };
-
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-birthday-board';
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
@@ -115,19 +113,19 @@
     const noteForm = document.getElementById('note-form');
     const submitButton = document.getElementById('submit-button');
     const messageBox = document.getElementById('message-box');
-    
+
     function showMessage(message, type = "success") {
-        messageBox.textContent = message;
-        messageBox.className = type; 
-        messageBox.style.display = 'block';
-        setTimeout(() => {
-            messageBox.style.display = 'none';
-        }, 4000);
+      messageBox.textContent = message;
+      messageBox.className = type;
+      messageBox.style.display = 'block';
+      setTimeout(() => {
+        messageBox.style.display = 'none';
+      }, 4000);
     }
 
     noteForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      
+
       const name = document.getElementById('name').value.trim();
       const message = document.getElementById('message').value.trim();
       const imageURL = document.getElementById('imageURL').value.trim();
@@ -136,13 +134,12 @@
         submitButton.disabled = true;
         submitButton.textContent = 'در حال ارسال...';
         try {
-          const notesCollectionPath = `artifacts/${appId}/public/data/stickyNotes`;
-          await addDoc(collection(db, notesCollectionPath), {
+          const notesCollectionPath = collection(db, "stickyNotes");
+          await addDoc(notesCollectionPath, {
             name,
             message,
             imageURL: imageURL || null,
             timestamp: serverTimestamp()
-            // No userId field needed anymore
           });
 
           showMessage('پیام شما با موفقیت ارسال شد! 🎉', 'success');
