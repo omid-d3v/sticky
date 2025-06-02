@@ -98,14 +98,19 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+    // Firebase configuration from your code
     const firebaseConfig = {
       apiKey: "AIzaSyBux-_Rlnw0nIv-F1dSdcRAbvLPSSTpZ8I",
       authDomain: "sticky-e06b0.firebaseapp.com",
       projectId: "sticky-e06b0",
-      storageBucket: "sticky-e06b0.appspot.com",
+      storageBucket: "sticky-e06b0.firebasestorage.app",
       messagingSenderId: "632807722451",
       appId: "1:632807722451:web:be9d003c442eb14987f326"
     };
+
+    // App ID - crucial for correct Firestore path
+    // If __app_id is available (like in the Canvas environment), use it. Otherwise, use a default.
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-birthday-board'; // Ensure this matches index.html if not using __app_id
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
@@ -116,7 +121,7 @@
 
     function showMessage(message, type = "success") {
       messageBox.textContent = message;
-      messageBox.className = type;
+      messageBox.className = type; 
       messageBox.style.display = 'block';
       setTimeout(() => {
         messageBox.style.display = 'none';
@@ -134,15 +139,18 @@
         submitButton.disabled = true;
         submitButton.textContent = 'در حال ارسال...';
         try {
-          const notesCollectionPath = collection(db, "stickyNotes");
-          await addDoc(notesCollectionPath, {
+          // Corrected Firestore path to match rules and index.html
+          const notesPath = `artifacts/${appId}/public/data/stickyNotes`;
+          const notesCollectionRef = collection(db, notesPath); // Use the full path
+
+          await addDoc(notesCollectionRef, { // Use the reference to the collection
             name,
             message,
             imageURL: imageURL || null,
             timestamp: serverTimestamp()
           });
 
-          showMessage('پیام شما با موفقیت ارسال شد! 🎉', 'success');
+          showMessage('پیام شما با موفقیت ارسال شد! �', 'success');
           noteForm.reset();
         } catch (error) {
           console.error("Error adding document: ", error);
@@ -158,3 +166,4 @@
   </script>
 </body>
 </html>
+�
