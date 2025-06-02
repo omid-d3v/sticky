@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sticky Notes Wall</title>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.2/dist/gsap.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+  <style>
+    :root {
+      --note-width: 160px;
+      --note-colors: #fef08a, #fcd34d, #fbbf24, #fdba74, #fca5a5, #c4b5fd, #a5f3fc;
+    }
+
+    body {
+      margin: 0;
+      padding: 1rem;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #fdf6e3, #fefce8);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1rem;
+    }
+
+    .note {
+      width: var(--note-width);
+      min-height: 120px;
+      padding: 1rem;
+      border-radius: 10px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      transform: rotate(var(--angle));
+      background: var(--color);
+      word-break: break-word;
+      position: relative;
+      animation: floatIn 0.6s ease forwards;
+    }
+
+    .note::before {
+      content: "";
+      position: absolute;
+      top: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 30px;
+      height: 6px;
+      background: #d4d4d4;
+      border-radius: 3px;
+    }
+
+    .note h4 {
+      margin: 0 0 0.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    @keyframes floatIn {
+      from {
+        opacity: 0;
+        transform: translateY(60px) scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+  </style>
+</head>
+<body>
+
+<script>
+  // 🔥 Firebase Config
+  const firebaseConfig = {
+        apiKey: "AIzaSyBux-_Rlnw0nIv-F1dSdcRAbvLPSSTpZ8I",
+  authDomain: "sticky-e06b0.firebaseapp.com",
+  projectId: "sticky-e06b0",
+  storageBucket: "sticky-e06b0.firebasestorage.app",
+  messagingSenderId: "632807722451",
+  appId: "1:632807722451:web:be9d003c442eb14987f326"
+    };
+
+  const app = firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  const noteColors = ['#fef08a', '#fcd34d', '#fbbf24', '#fdba74', '#fca5a5', '#c4b5fd', '#a5f3fc'];
+
+  db.collection("notes").get().then((querySnapshot) => {
+    let i = 0;
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      const note = document.createElement("div");
+      note.className = "note";
+
+      const randomColor = noteColors[Math.floor(Math.random() * noteColors.length)];
+      const angle = (Math.random() * 6 - 3).toFixed(1) + "deg";
+
+      note.style.setProperty('--color', randomColor);
+      note.style.setProperty('--angle', angle);
+
+      note.innerHTML = `
+        <h4>${data.name || 'Anonymous'}</h4>
+        <p>${data.message}</p>
+      `;
+
+      document.body.appendChild(note);
+
+      gsap.from(note, {
+        opacity: 0,
+        y: 100,
+        scale: 0.8,
+        delay: i * 0.08,
+        duration: 0.6,
+        ease: "back.out(1.7)"
+      });
+      i++;
+    });
+  });
+</script>
+
+</body>
+</html>
