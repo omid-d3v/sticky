@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>تخته یادداشت‌های تبریک تولد</title>
+  <title>تخته یادداشت‌های تبریک</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
@@ -24,61 +24,96 @@
       border-radius: 12px;
       box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     }
-    /* No add note link container needed */
+    .board-info {
+      text-align: center;
+      margin-bottom: 20px;
+      font-size: 1.2rem;
+      color: #555;
+      background-color: rgba(255,255,255,0.7);
+      padding: 8px;
+      border-radius: 8px;
+      display: inline-block; /* Center the block */
+    }
+    header { /* Ensure header itself is a block for centering its content */
+        display: block;
+        text-align: center;
+    }
   </style>
 </head>
 <body>
   <header>
-    <h1 class="app-title">🎉 یادداشت هم تیمی هات برای تولدت - 1404 🎂</h1>
+    <h1 class="app-title" id="page-title">🎉 تخته یادداشت‌های تبریک! 🎂</h1>
+    <div id="board-info-container">
+        </div>
   </header>
 
   <div id="notes-container">
     </div>
 
   <script type="module">
-    // Import Firebase modules
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    // Register GSAP ScrollToPlugin
     gsap.registerPlugin(ScrollToPlugin);
 
-    // Firebase configuration - uses global variable if available
-    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+    const firebaseConfig = { // Using your provided config
       apiKey: "AIzaSyBux-_Rlnw0nIv-F1dSdcRAbvLPSSTpZ8I",
-  authDomain: "sticky-e06b0.firebaseapp.com",
-  projectId: "sticky-e06b0",
-  storageBucket: "sticky-e06b0.firebasestorage.app",
-  messagingSenderId: "632807722451",
-  appId: "1:632807722451:web:be9d003c442eb14987f326"
+      authDomain: "sticky-e06b0.firebaseapp.com",
+      projectId: "sticky-e06b0",
+      storageBucket: "sticky-e06b0.firebasestorage.app",
+      messagingSenderId: "632807722451",
+      appId: "1:632807722451:web:be9d003c442eb14987f326"
     };
 
-    // App ID - uses global variable if available
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-birthday-board';
-
-    // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
     const notesContainer = document.getElementById('notes-container');
+    const pageTitle = document.getElementById('page-title');
+    const boardInfoContainer = document.getElementById('board-info-container');
+
+
+    let currentBoardId = 'default-birthday-board'; // Default board for existing notes
 
     // --- Auto-scroll variables ---
     let autoScrollAnimation;
     const SCROLL_SPEED_FACTOR = 0.02;
     let resumeScrollTimeout;
-    const MIN_NOTES_FOR_AUTOSCROLL = 6;
+    const MIN_NOTES_FOR_AUTOSCROLL = 6; 
     const USER_INTERACTION_PAUSE_DURATION = 7000;
     const DELAY_AT_ENDS_OF_SCROLL = 3000;
 
-    // Function to load and display notes
+    function getBoardIdFromURL() {
+        const params = new URLSearchParams(window.location.search);
+        return params.get('boardId');
+    }
+
+    function updatePageTitleAndInfo(boardId) {
+        const displayBoardId = boardId === 'default-birthday-board' ? 'عمومی (پیش‌فرض)' : boardId;
+        pageTitle.textContent = `🎉 پیام‌های تبریک برای ${displayBoardId}! 🎂`;
+        
+        boardInfoContainer.innerHTML = ''; // Clear previous
+        const infoEl = document.createElement('div');
+        infoEl.classList.add('board-info');
+        infoEl.innerHTML = `شما در حال مشاهده تخته: <strong>${displayBoardId}</strong> هستید. <br><a href="manage.html?boardId=${boardId}" style="font-size:0.9em;">افزودن پیام به این تخته / مدیریت</a>`;
+        boardInfoContainer.appendChild(infoEl);
+    }
+
+
     function loadNotes() {
-      const notesCollectionPath = `artifacts/${appId}/public/data/stickyNotes`;
+      const boardIdFromURL = getBoardIdFromURL();
+      if (boardIdFromURL) {
+        currentBoardId = boardIdFromURL;
+      }
+      updatePageTitleAndInfo(currentBoardId);
+
+      const notesCollectionPath = `artifacts/${currentBoardId}/public/data/stickyNotes`;
       const q = query(collection(db, notesCollectionPath), orderBy('timestamp', 'desc'));
 
       onSnapshot(q, (snapshot) => {
         const notesExist = notesContainer.children.length > 0;
         const animateOutCallback = () => {
-            notesContainer.innerHTML = ''; // Clear after animation
+            notesContainer.innerHTML = ''; 
             displayNotes(snapshot.docs);
         };
 
@@ -88,32 +123,33 @@
                 onComplete: animateOutCallback
             });
         } else {
-            notesContainer.innerHTML = ''; // Clear immediately if no notes shown
+            notesContainer.innerHTML = ''; 
             displayNotes(snapshot.docs);
         }
       }, (error) => {
-        console.error("Error fetching notes: ", error);
-        notesContainer.innerHTML = '<p style="color: red; text-align: center;">خطا در بارگذاری یادداشت‌ها. لطفاً صفحه را رفرش کنید.</p>';
+        console.error(`Error fetching notes for board ${currentBoardId}: `, error);
+        notesContainer.innerHTML = `<p style="color: red; text-align: center;">خطا در بارگذاری یادداشت‌ها برای تخته "${currentBoardId}". لطفاً از صحیح بودن شناسه تخته مطمئن شوید یا صفحه را رفرش کنید.</p>`;
       });
     }
 
     function displayNotes(docs) {
+        if (docs.length === 0) {
+            notesContainer.innerHTML = `<p style="text-align: center; color: #555; font-size: 1.2rem;">هنوز هیچ پیام تبریکی برای این تخته (${currentBoardId}) ثبت نشده. اولین نفر باش!</p>`;
+            if (autoScrollAnimation) autoScrollAnimation.kill();
+            return;
+        }
         docs.forEach((doc, index) => {
             const data = doc.data();
             createNoteElement(data, doc.id, index);
         });
-        if (docs.length === 0) {
-            notesContainer.innerHTML = '<p style="text-align: center; color: #555; font-size: 1.2rem;">هنوز هیچ پیام تبریکی ثبت نشده. اولین نفر باش!</p>';
-            if (autoScrollAnimation) autoScrollAnimation.kill();
-        } else {
-            setTimeout(() => {
-                if (docs.length >= MIN_NOTES_FOR_AUTOSCROLL) {
-                    initiateAutoScroll();
-                } else {
-                    if (autoScrollAnimation) autoScrollAnimation.kill();
-                }
-            }, 500);
-        }
+        
+        setTimeout(() => {
+            if (docs.length >= MIN_NOTES_FOR_AUTOSCROLL) {
+                initiateAutoScroll();
+            } else {
+                if (autoScrollAnimation) autoScrollAnimation.kill();
+            }
+        }, 500);
     }
 
     function createNoteElement(data, id, index) {
@@ -169,26 +205,19 @@
 
     function initiateAutoScroll() {
         if (autoScrollAnimation) autoScrollAnimation.kill(); 
-
         const scrollableHeight = document.documentElement.scrollHeight - window.innerHeight;
         if (scrollableHeight <= 0) return;
-        
         const currentScrollY = window.scrollY;
         const isAtBottom = currentScrollY >= scrollableHeight - 1;
         const isAtTop = currentScrollY <= 1; 
-
         let targetY = isAtBottom ? 0 : "max"; 
         let duration = Math.abs((targetY === "max" ? scrollableHeight : 0) - currentScrollY) * SCROLL_SPEED_FACTOR;
-        
         if (duration < 5) duration = 5;
-
         autoScrollAnimation = gsap.to(window, {
             scrollTo: { y: targetY, autoKill: false },
             duration: duration,
             ease: "power1.inOut", 
-            onComplete: () => {
-                setTimeout(initiateAutoScroll, DELAY_AT_ENDS_OF_SCROLL);
-            }
+            onComplete: () => { setTimeout(initiateAutoScroll, DELAY_AT_ENDS_OF_SCROLL); }
         });
     }
 
@@ -204,14 +233,11 @@
         }, USER_INTERACTION_PAUSE_DURATION);
     }
 
-    // Load notes when the DOM is ready
     document.addEventListener('DOMContentLoaded', loadNotes);
-
     window.addEventListener('scroll', handleUserInteraction, { passive: true });
     window.addEventListener('wheel', handleUserInteraction, { passive: true });
     window.addEventListener('touchstart', handleUserInteraction, { passive: true });
     window.addEventListener('mousedown', handleUserInteraction);
-
   </script>
 </body>
 </html>
