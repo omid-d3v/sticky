@@ -38,17 +38,31 @@
         display: block;
         text-align: center;
     }
+    .main-footer {
+        text-align: center;
+        padding: 20px;
+        margin-top: 40px;
+        font-family: 'Vazirmatn', sans-serif;
+        color: #555;
+        font-size: 0.9rem;
+        background-color: rgba(255, 255, 255, 0.5);
+        border-top: 1px solid #ddd;
+    }
   </style>
 </head>
 <body>
   <header>
-    <h1 class="app-title" id="page-title">🎉یادداشت هم تیمی‌هات برای تولدت - 1404🎂</h1>
+    <h1 class="app-title" id="page-title">🎉 تخته یادداشت‌های تبریک! 🎂</h1>
     <div id="board-info-container">
         </div>
   </header>
 
   <div id="notes-container">
     </div>
+  
+  <footer class="main-footer">
+    ساخته شده با عشق توسط امید و مهلا ❤️
+  </footer>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -95,7 +109,8 @@
         boardInfoContainer.innerHTML = ''; // Clear previous
         const infoEl = document.createElement('div');
         infoEl.classList.add('board-info');
-        infoEl.innerHTML = `شما در حال مشاهده تخته: <strong>${displayBoardId}</strong> هستید. <br><a href="manage.html?boardId=${boardId}" style="font-size:0.9em;">افزودن پیام به این تخته / مدیریت</a>`;
+        // Removed the link to manage.html
+        infoEl.innerHTML = `شما در حال مشاهده تخته: <strong>${displayBoardId}</strong> هستید.`;
         boardInfoContainer.appendChild(infoEl);
     }
 
@@ -134,7 +149,7 @@
 
     function displayNotes(docs) {
         if (docs.length === 0) {
-            notesContainer.innerHTML = `<p style="text-align: center; color: #555; font-size: 1.2rem;">هنوز هیچ پیام تبریکی برای این تخته (${currentBoardId}) ثبت نشده. اولین نفر باش!</p>`;
+            notesContainer.innerHTML = `<p style="text-align: center; color: #555; font-size: 1.2rem;">هنوز هیچ پیام تبریکی برای این تخته (${currentBoardId}) ثبت نشده است.</p>`;
             if (autoScrollAnimation) autoScrollAnimation.kill();
             return;
         }
