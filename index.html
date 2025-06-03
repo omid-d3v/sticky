@@ -32,9 +32,9 @@
       background-color: rgba(255,255,255,0.7);
       padding: 8px;
       border-radius: 8px;
-      display: inline-block; /* Center the block */
+      display: inline-block;
     }
-    header { /* Ensure header itself is a block for centering its content */
+    header {
         display: block;
         text-align: center;
     }
@@ -52,44 +52,30 @@
 </head>
 <body>
   <header>
-    <h1 class="app-title" id="page-title">🎉 یادداشت هم تیمی‌هات برای تولدت 🎂</h1>
+    <h1 class="app-title" id="page-title">🎉 تخته یادداشت‌های تبریک! 🎂</h1>
     <div id="board-info-container">
-        </div>
+    </div>
   </header>
 
   <div id="notes-container">
-    </div>
+  </div>
   
   <footer class="main-footer">
     ساخته شده با عشق توسط امید و مهلا ❤️
   </footer>
 
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    // ! مهم: این آدرس را با آدرس سرور پروکسی خود در Railway جایگزین کنید
+    const PROXY_BASE_URL = 'https://sticky-proxyserver-production.up.railway.app/api'; // مثال: 'https://my-notes-proxy.up.railway.app/api'
 
     gsap.registerPlugin(ScrollToPlugin);
-
-    const firebaseConfig = { // Using your provided config
-      apiKey: "AIzaSyBux-_Rlnw0nIv-F1dSdcRAbvLPSSTpZ8I",
-      authDomain: "sticky-e06b0.firebaseapp.com",
-      projectId: "sticky-e06b0",
-      storageBucket: "sticky-e06b0.firebasestorage.app",
-      messagingSenderId: "632807722451",
-      appId: "1:632807722451:web:be9d003c442eb14987f326"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
 
     const notesContainer = document.getElementById('notes-container');
     const pageTitle = document.getElementById('page-title');
     const boardInfoContainer = document.getElementById('board-info-container');
 
+    let currentBoardId = 'default-birthday-board'; 
 
-    let currentBoardId = 'default-birthday-board'; // Default board for existing notes
-
-    // --- Auto-scroll variables ---
     let autoScrollAnimation;
     const SCROLL_SPEED_FACTOR = 0.02;
     let resumeScrollTimeout;
@@ -106,56 +92,45 @@
         const displayBoardId = boardId === 'default-birthday-board' ? 'عمومی (پیش‌فرض)' : boardId;
         pageTitle.textContent = `🎉 پیام‌های تبریک برای ${displayBoardId}! 🎂`;
         
-        boardInfoContainer.innerHTML = ''; // Clear previous
+        boardInfoContainer.innerHTML = '';
         const infoEl = document.createElement('div');
         infoEl.classList.add('board-info');
-        // Removed the link to manage.html
         infoEl.innerHTML = `شما در حال مشاهده تخته: <strong>${displayBoardId}</strong> هستید.`;
         boardInfoContainer.appendChild(infoEl);
     }
 
-
-    function loadNotes() {
+    async function loadNotes() {
       const boardIdFromURL = getBoardIdFromURL();
-      if (boardIdFromURL) {
-        currentBoardId = boardIdFromURL;
+      if (boardIdFromURL && boardIdFromURL.trim() !== '') {
+        currentBoardId = boardIdFromURL.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
       }
-      // updatePageTitleAndInfo(currentBoardId);
+      updatePageTitleAndInfo(currentBoardId);
+      notesContainer.innerHTML = `<p style="text-align:center; color:#555;">در حال بارگذاری پیام‌ها برای تخته "${currentBoardId}"...</p>`;
 
-      const notesCollectionPath = `artifacts/${currentBoardId}/public/data/stickyNotes`;
-      const q = query(collection(db, notesCollectionPath), orderBy('timestamp', 'desc'));
-
-      onSnapshot(q, (snapshot) => {
-        const notesExist = notesContainer.children.length > 0;
-        const animateOutCallback = () => {
-            notesContainer.innerHTML = ''; 
-            displayNotes(snapshot.docs);
-        };
-
-        if (notesExist) {
-            gsap.to(".note", {
-                opacity: 0, scale: 0.8, duration: 0.3, stagger: 0.05,
-                onComplete: animateOutCallback
-            });
-        } else {
-            notesContainer.innerHTML = ''; 
-            displayNotes(snapshot.docs);
+      try {
+        const response = await fetch(`${PROXY_BASE_URL}/notes/${currentBoardId}`);
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({error: "خطای ناشناخته در ارتباط با سرور پروکسی"}));
+          throw new Error(errorData.error || `خطای سرور پروکسی: ${response.status}`);
         }
-      }, (error) => {
-        console.error(`Error fetching notes for board ${currentBoardId}: `, error);
-        notesContainer.innerHTML = `<p style="color: red; text-align: center;">خطا در بارگذاری یادداشت‌ها برای تخته "${currentBoardId}". لطفاً از صحیح بودن شناسه تخته مطمئن شوید یا صفحه را رفرش کنید.</p>`;
-      });
+        const notes = await response.json();
+        displayNotes(notes);
+      } catch (error) {
+        console.error(`Error fetching notes for board ${currentBoardId} via proxy: `, error);
+        notesContainer.innerHTML = `<p style="color: red; text-align: center;">خطا در بارگذاری یادداشت‌ها برای تخته "${currentBoardId}". ${error.message}</p>`;
+      }
     }
 
     function displayNotes(docs) {
-        if (docs.length === 0) {
+        notesContainer.innerHTML = ''; // Clear loading/previous messages
+        if (!docs || docs.length === 0) {
             notesContainer.innerHTML = `<p style="text-align: center; color: #555; font-size: 1.2rem;">هنوز هیچ پیام تبریکی برای این تخته (${currentBoardId}) ثبت نشده است.</p>`;
             if (autoScrollAnimation) autoScrollAnimation.kill();
             return;
         }
         docs.forEach((doc, index) => {
-            const data = doc.data();
-            createNoteElement(data, doc.id, index);
+            // Assuming 'doc' from proxy already has 'id' and data fields directly
+            createNoteElement(doc, doc.id, index); 
         });
         
         setTimeout(() => {
@@ -196,10 +171,20 @@
       msgEl.textContent = data.message;
       noteEl.appendChild(msgEl);
 
-      if (data.timestamp && data.timestamp.toDate) {
+      // Timestamps from Firestore via proxy are objects, need to convert if they exist and are valid
+      let formattedTimestamp = 'نامشخص';
+      if (data.timestamp && data.timestamp._seconds) { // Firestore timestamp object from Admin SDK via proxy
+            formattedTimestamp = new Date(data.timestamp._seconds * 1000).toLocaleString('fa-IR', { day: 'numeric', month: 'long' });
+      } else if (typeof data.timestamp === 'string' && data.timestamp.includes("Pending")) {
+          formattedTimestamp = "درحال ثبت توسط سرور";
+      } else if (data.timestamp) { // If it's already a string or number from a previous fetch
+          try { formattedTimestamp = new Date(data.timestamp).toLocaleString('fa-IR', { day: 'numeric', month: 'long' }); } catch (e) { /* ignore */ }
+      }
+
+      if (formattedTimestamp !== 'نامشخص') {
         const dateEl = document.createElement('div');
         dateEl.classList.add('timestamp');
-        dateEl.textContent = data.timestamp.toDate().toLocaleDateString('fa-IR', { day: 'numeric', month: 'long' });
+        dateEl.textContent = formattedTimestamp;
         noteEl.appendChild(dateEl);
       }
       

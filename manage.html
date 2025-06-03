@@ -41,7 +41,7 @@
         font-weight: bold;
     }
     #board-selector-form input[type="text"] {
-        width: calc(100% - 110px); /* Adjust based on button width */
+        width: calc(100% - 130px); /* Adjusted for button width */
         padding: 10px;
         border-radius: 5px;
         border: 1px solid #ccc;
@@ -72,10 +72,15 @@
     #current-board-info a:hover {
         text-decoration: underline;
     }
-
-    /* (Styles from previous add.html for form and list are mostly reused via style.css or are similar) */
-    /* Styles for the notes list */
-    #admin-notes-list-container { margin-top: 0; } /* Already has margin-bottom from .form-container */
+    .main-footer {
+        text-align: center;
+        padding: 20px;
+        margin-top: 10px;
+        font-family: 'Vazirmatn', sans-serif;
+        color: #555;
+        font-size: 0.9rem;
+    }
+    #admin-notes-list-container { margin-top: 0; }
     .admin-note-item {
         border: 1px solid #eee; background-color: #fff; padding: 15px; margin-bottom: 15px;
         border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex;
@@ -86,20 +91,19 @@
     .admin-note-item .note-message { font-size: 0.95rem; color: #555; white-space: pre-wrap; }
     .admin-note-item .note-image-url { font-size: 0.8rem; color: #777; word-break: break-all; }
     .admin-note-item .note-actions button {
-        padding: 6px 12px; margin-left: 8px; /* RTL: margin-left */ border: none;
+        padding: 6px 12px; margin-left: 8px; border: none;
         border-radius: 5px; cursor: pointer; font-size: 0.9rem; transition: opacity 0.2s ease;
     }
     .admin-note-item .note-actions button:hover { opacity: 0.8; }
     .edit-button { background-color: #ffc107; color: #333; }
     .delete-button { background-color: #f44336; color: white; }
-    .cancel-edit-button { background-color: #9e9e9e; color: white; display: none; }
+    .cancel-edit-button { background-color: #9e9e9e; color: white; display: none; margin-top: 10px;}
     #message-box {
         margin-top: 15px; padding: 10px; border-radius: 5px; text-align: center;
         font-weight: bold; display: none; 
     }
     #message-box.success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
     #message-box.error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-
   </style>
 </head>
 <body>
@@ -113,7 +117,8 @@
         </form>
     </div>
 
-    <div id="board-management-area" style="display:none;"> <div id="current-board-info"></div>
+    <div id="board-management-area" style="display:none;">
+        <div id="current-board-info"></div>
         <div class="form-container">
           <h1 class="section-title" id="form-main-title">💌 افزودن پیام به تخته 💌</h1>
           <form id="note-form">
@@ -143,22 +148,15 @@
         </div>
     </div>
   </div>
+  
+  <footer class="main-footer">
+    ساخته شده با عشق توسط امید و مهلا ❤️
+  </footer>
 
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, serverTimestamp, onSnapshot, doc, deleteDoc, updateDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-    const firebaseConfig = { // Using your provided config
-      apiKey: "AIzaSyBux-_Rlnw0nIv-F1dSdcRAbvLPSSTpZ8I",
-      authDomain: "sticky-e06b0.firebaseapp.com",
-      projectId: "sticky-e06b0",
-      storageBucket: "sticky-e06b0.firebasestorage.app",
-      messagingSenderId: "632807722451",
-      appId: "1:632807722451:web:be9d003c442eb14987f326"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    // ! مهم: این آدرس را با آدرس سرور پروکسی خود در Railway جایگزین کنید
+    const PROXY_BASE_URL = 'https://sticky-proxyserver-production.up.railway.app/api'; // مثال: 'https://my-notes-proxy.up.railway.app/api'
+                                                                      // /api را به انتهای آدرس اضافه کنید
 
     const boardSelectorForm = document.getElementById('board-selector-form');
     const boardIdInputField = document.getElementById('boardIdInput');
@@ -170,7 +168,7 @@
     const submitButton = document.getElementById('submit-button');
     const cancelEditButton = document.getElementById('cancel-edit-button');
     const messageBox = document.getElementById('message-box');
-    const noteIdField = document.getElementById('noteId');
+    const noteIdField = document.getElementById('noteId'); // This is the hidden input
     const nameField = document.getElementById('name');
     const messageField = document.getElementById('message');
     const imageURLField = document.getElementById('imageURL');
@@ -179,8 +177,7 @@
     const listTitle = document.getElementById('list-title');
 
     let activeBoardId = null;
-    let currentEditId = null; 
-    let unsubscribeNotesListener = null; // To detach listener when changing boards
+    let currentEditId = null; // Stores the ID of the note being edited
 
     function getBoardIdFromURL() {
         const params = new URLSearchParams(window.location.search);
@@ -188,6 +185,7 @@
     }
 
     function sanitizeBoardId(id) {
+        if (!id) return '';
         return id.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
     }
 
@@ -196,10 +194,9 @@
         const inputBoardId = boardIdInputField.value;
         const sanitizedBoardId = sanitizeBoardId(inputBoardId);
         if (sanitizedBoardId) {
-            // Update URL and reload or just initialize board
             window.location.search = `?boardId=${sanitizedBoardId}`;
         } else {
-            showMessage('لطفاً یک شناسه معتبر برای تخته وارد کنید.', 'error', messageBox); // Use specific messageBox
+            showMessage('لطفاً یک شناسه معتبر برای تخته وارد کنید.', 'error');
         }
     });
 
@@ -217,13 +214,13 @@
         formMainTitle.textContent = `💌 افزودن پیام به تخته "${activeBoardId}" 💌`;
         listTitle.textContent = `لیست پیام‌های تخته "${activeBoardId}"`;
         
-        resetForm(); // Clear form for the new board
+        resetForm();
         loadNotesForAdmin();
     }
     
     function showMessage(message, type = "success", targetMessageBox = messageBox) {
       targetMessageBox.textContent = message;
-      targetMessageBox.className = type; 
+      targetMessageBox.className = `message-box ${type}`; // Ensure base class is there
       targetMessageBox.style.display = 'block';
       setTimeout(() => {
         targetMessageBox.style.display = 'none';
@@ -232,10 +229,14 @@
 
     function resetForm() {
         noteForm.reset();
-        noteIdField.value = '';
+        noteIdField.value = ''; // Clear the hidden ID field
         currentEditId = null;
         submitButton.textContent = 'ارسال پیام ✨';
-        formMainTitle.textContent = `💌 افزودن پیام به تخته "${activeBoardId}" 💌`;
+        if (activeBoardId) { // Update title only if a board is active
+            formMainTitle.textContent = `💌 افزودن پیام به تخته "${activeBoardId}" 💌`;
+        } else {
+            formMainTitle.textContent = '💌 پیامت رو اینجا بنویس! 💌';
+        }
         cancelEditButton.style.display = 'none';
         submitButton.disabled = false;
     }
@@ -249,26 +250,41 @@
       const name = nameField.value.trim();
       const message = messageField.value.trim();
       const imageURL = imageURLField.value.trim();
+      const noteData = { name, message, imageURL: imageURL || null };
 
       if (name && message) {
         submitButton.disabled = true;
-        const notesPath = `artifacts/${activeBoardId}/public/data/stickyNotes`;
+        let url, method;
+
+        if (currentEditId) { // UPDATE
+          url = `${PROXY_BASE_URL}/notes/${activeBoardId}/${currentEditId}`;
+          method = 'PUT';
+          submitButton.textContent = 'در حال به‌روزرسانی...';
+        } else { // ADD
+          url = `${PROXY_BASE_URL}/notes/${activeBoardId}`;
+          method = 'POST';
+          submitButton.textContent = 'در حال ارسال...';
+        }
+
         try {
-          if (currentEditId) {
-            submitButton.textContent = 'در حال به‌روزرسانی...';
-            const noteRef = doc(db, notesPath, currentEditId);
-            await updateDoc(noteRef, { name, message, imageURL: imageURL || null });
-            showMessage('پیام با موفقیت به‌روزرسانی شد! 👍', 'success');
-          } else {
-            submitButton.textContent = 'در حال ارسال...';
-            const notesCollectionRef = collection(db, notesPath);
-            await addDoc(notesCollectionRef, { name, message, imageURL: imageURL || null, timestamp: serverTimestamp() });
-            showMessage('پیام شما با موفقیت ارسال شد! 🎉', 'success');
+          const response = await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(noteData)
+          });
+          
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({error: "خطای ناشناخته در پاسخ سرور"}));
+            throw new Error(errorData.error || `خطای سرور: ${response.status}`);
           }
+          
+          // const result = await response.json(); // The proxy sends back the note or a success message
+          showMessage(currentEditId ? 'پیام با موفقیت به‌روزرسانی شد! 👍' : 'پیام شما با موفقیت ارسال شد! 🎉', 'success');
           resetForm();
+          loadNotesForAdmin(); // Refresh list after add/update
         } catch (error) {
-          console.error("Error saving document: ", error);
-          showMessage('خطا در ذخیره پیام. لطفا دوباره تلاش کنید.', 'error');
+          console.error("Error saving document via proxy: ", error);
+          showMessage(`خطا در ذخیره پیام: ${error.message}`, 'error');
           submitButton.disabled = false;
           submitButton.textContent = currentEditId ? 'به‌روزرسانی پیام 🔄' : 'ارسال پیام ✨';
         }
@@ -282,34 +298,34 @@
         window.scrollTo({ top: 0, behavior: 'smooth' });
     });
 
-    function loadNotesForAdmin() {
+    async function loadNotesForAdmin() {
         if (!activeBoardId) return;
-        if (unsubscribeNotesListener) { // Detach previous listener if exists
-            unsubscribeNotesListener();
-        }
-        const notesPath = `artifacts/${activeBoardId}/public/data/stickyNotes`;
-        const q = query(collection(db, notesPath), orderBy('timestamp', 'desc'));
-
-        unsubscribeNotesListener = onSnapshot(q, (snapshot) => {
-            adminNotesListDiv.innerHTML = '';
-            if (snapshot.empty) {
+        adminNotesListDiv.innerHTML = `<p style="text-align:center; color:#777;">در حال بارگذاری پیام‌ها برای تخته "${activeBoardId}"...</p>`;
+        try {
+            const response = await fetch(`${PROXY_BASE_URL}/notes/${activeBoardId}`);
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({error: "خطای ناشناخته"}));
+                throw new Error(errorData.error || `خطای سرور: ${response.status}`);
+            }
+            const notes = await response.json();
+            adminNotesListDiv.innerHTML = ''; // Clear loading message
+            if (!notes || notes.length === 0) {
                 adminNotesListDiv.innerHTML = `<p style="text-align:center; color:#777;">هنوز پیامی برای تخته "${activeBoardId}" ثبت نشده است.</p>`;
                 return;
             }
-            snapshot.forEach((docSnap) => {
-                createAdminNoteElement(docSnap.data(), docSnap.id);
-            });
-        }, (error) => {
+            notes.forEach(note => createAdminNoteElement(note, note.id));
+        } catch (error) {
             console.error(`Error fetching notes for admin (board: ${activeBoardId}): `, error);
-            showMessage("خطا در بارگذاری لیست پیام‌ها.", "error");
-        });
+            showMessage(`خطا در بارگذاری لیست پیام‌ها: ${error.message}`, "error");
+            adminNotesListDiv.innerHTML = `<p style="text-align:center; color:red;">خطا در بارگذاری پیام‌ها. ${error.message}</p>`;
+        }
     }
 
     function createAdminNoteElement(note, noteId) {
         const item = document.createElement('div');
         item.classList.add('admin-note-item');
         item.dataset.id = noteId;
-        // (Rest of the element creation logic is the same as your previous admin page)
+        
         const contentDiv = document.createElement('div');
         contentDiv.classList.add('note-content');
         const nameEl = document.createElement('div');
@@ -320,24 +336,36 @@
             const imageEl = document.createElement('div');
             imageEl.classList.add('note-image-url'); imageEl.innerHTML = `<strong>لینک عکس:</strong> ${note.imageURL}`; contentDiv.appendChild(imageEl);
         }
-        const timestamp = note.timestamp ? note.timestamp.toDate().toLocaleString('fa-IR') : 'نامشخص';
+        // Timestamps from Firestore are objects, need to convert if they exist and are valid
+        let formattedTimestamp = 'نامشخص';
+        if (note.timestamp && note.timestamp._seconds) { // Firestore timestamp object from Admin SDK
+             formattedTimestamp = new Date(note.timestamp._seconds * 1000).toLocaleString('fa-IR');
+        } else if (typeof note.timestamp === 'string' && note.timestamp.includes("Pending")) {
+            formattedTimestamp = "درحال ثبت توسط سرور";
+        } else if (note.timestamp) { // If it's already a string or number from a previous fetch
+            try { formattedTimestamp = new Date(note.timestamp).toLocaleString('fa-IR'); } catch (e) { /* ignore */ }
+        }
+
         const timestampEl = document.createElement('div');
         timestampEl.style.fontSize = '0.8rem'; timestampEl.style.color = '#888';
-        timestampEl.textContent = `تاریخ: ${timestamp}`; contentDiv.appendChild(timestampEl);
+        timestampEl.textContent = `تاریخ: ${formattedTimestamp}`; contentDiv.appendChild(timestampEl);
         item.appendChild(contentDiv);
+
         const actionsDiv = document.createElement('div'); actionsDiv.classList.add('note-actions');
         const editButton = document.createElement('button');
         editButton.classList.add('edit-button'); editButton.textContent = 'ویرایش';
         editButton.addEventListener('click', () => {
             formMainTitle.textContent = `📝 ویرایش پیام در تخته "${activeBoardId}" 📝`;
             nameField.value = note.name; messageField.value = note.message; imageURLField.value = note.imageURL || '';
-            noteIdField.value = noteId; currentEditId = noteId;
+            noteIdField.value = noteId; currentEditId = noteId; // Set currentEditId
             submitButton.textContent = 'به‌روزرسانی پیام 🔄'; cancelEditButton.style.display = 'inline-block';
             window.scrollTo({ top: 0, behavior: 'smooth' }); nameField.focus();
         });
+
         const deleteButton = document.createElement('button');
         deleteButton.classList.add('delete-button'); deleteButton.textContent = 'حذف';
         deleteButton.addEventListener('click', async () => {
+            // Custom confirmation dialog
             const modal = document.createElement('div');
             modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background-color:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:1000;direction:rtl;';
             const modalContent = document.createElement('div');
@@ -348,13 +376,21 @@
             confirmBtn.textContent = 'بله، حذف کن'; confirmBtn.style.cssText = 'background-color:#f44336;color:white;border:none;padding:10px 15px;border-radius:5px;margin-left:10px;cursor:pointer;';
             const cancelBtn = document.createElement('button');
             cancelBtn.textContent = 'انصراف'; cancelBtn.style.cssText = 'background-color:#ccc;border:none;padding:10px 15px;border-radius:5px;cursor:pointer;';
+            
             confirmBtn.onclick = async () => {
                 document.body.removeChild(modal);
                 try {
-                    const notesPath = `artifacts/${activeBoardId}/public/data/stickyNotes`;
-                    await deleteDoc(doc(db, notesPath, noteId));
+                    const response = await fetch(`${PROXY_BASE_URL}/notes/${activeBoardId}/${noteId}`, { method: 'DELETE' });
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({error: "خطای ناشناخته"}));
+                        throw new Error(errorData.error || `Server error: ${response.status}`);
+                    }
                     showMessage('پیام با موفقیت حذف شد.', 'success');
-                } catch (error) { console.error("Error deleting document: ", error); showMessage('خطا در حذف پیام.', 'error'); }
+                    loadNotesForAdmin(); // Refresh list
+                } catch (error) { 
+                    console.error("Error deleting document via proxy: ", error); 
+                    showMessage(`خطا در حذف پیام: ${error.message}`, 'error'); 
+                }
             };
             cancelBtn.onclick = () => { document.body.removeChild(modal); };
             modalContent.appendChild(confirmBtn); modalContent.appendChild(cancelBtn);
@@ -364,16 +400,15 @@
         adminNotesListDiv.appendChild(item);
     }
 
-    // Check for boardId in URL on initial load
-    const initialBoardId = getBoardIdFromURL();
-    if (initialBoardId) {
-        boardIdInputField.value = initialBoardId; // Pre-fill if came from link
-        initializeBoard(sanitizeBoardId(initialBoardId));
+    const initialBoardIdFromUrl = getBoardIdFromURL();
+    if (initialBoardIdFromUrl) {
+        const sanitizedInitialId = sanitizeBoardId(initialBoardIdFromUrl);
+        boardIdInputField.value = sanitizedInitialId; // Pre-fill for clarity
+        initializeBoard(sanitizedInitialId);
     } else {
         boardSelectorWrapper.style.display = 'block';
         boardManagementArea.style.display = 'none';
     }
-
   </script>
 </body>
 </html>
